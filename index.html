@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b6b3a" />
+  <meta name="description" content="Gerador de molduras para foto de perfil e Story, com processamento local no navegador." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>Gerador de Molduras</title>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero card">
+      <div class="brandmark" aria-hidden="true">◉</div>
+      <div>
+        <p class="eyebrow">GERADOR DE MOLDURAS</p>
+        <h1>Crie sua imagem em poucos segundos</h1>
+        <p class="sub">Sua foto é processada no próprio navegador. Nada precisa ser enviado para um servidor.</p>
+      </div>
+    </section>
+
+    <section class="workspace card">
+      <div class="tabs" role="tablist" aria-label="Formato da arte">
+        <button id="profileTab" class="tab active" role="tab" aria-selected="true">Foto de perfil</button>
+        <button id="storyTab" class="tab" role="tab" aria-selected="false">Story</button>
+      </div>
+
+      <div class="grid">
+        <div class="controls">
+          <label class="upload" for="fileInput">
+            <span>Selecionar sua foto</span>
+            <input id="fileInput" type="file" accept="image/*" hidden />
+          </label>
+
+          <div class="fieldgroup">
+            <label for="titleText">Nome / título</label>
+            <input id="titleText" type="text" maxlength="34" value="SEU NOME" />
+          </div>
+
+          <div class="fieldgroup two">
+            <div>
+              <label for="numberText">Número / destaque</label>
+              <input id="numberText" type="text" maxlength="12" value="00.000" />
+            </div>
+            <div>
+              <label for="messageText">Mensagem curta</label>
+              <input id="messageText" type="text" maxlength="42" value="SUA MENSAGEM AQUI" />
+            </div>
+          </div>
+
+          <div class="fieldgroup">
+            <label for="zoomRange">Zoom da foto</label>
+            <input id="zoomRange" type="range" min="1" max="3" value="1" step="0.01" />
+            <p class="hint">Arraste a foto na prévia para reposicionar.</p>
+          </div>
+
+          <div class="actions">
+            <button id="resetBtn" class="secondary" type="button">Reenquadrar</button>
+            <button id="downloadBtn" class="primary" type="button">Salvar PNG</button>
+          </div>
+
+          <button id="shareBtn" class="share" type="button">Compartilhar esta página</button>
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="preview-head">
+            <strong>Como vai ficar</strong>
+            <span id="sizeLabel">1080 × 1080</span>
+          </div>
+          <canvas id="previewCanvas" width="1080" height="1080" aria-label="Prévia da arte"></canvas>
+          <p class="privacy">Privacidade: a imagem selecionada fica somente no seu aparelho.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how card">
+      <h2>Como funciona</h2>
+      <div class="steps">
+        <div><span>1</span><p>Escolha uma foto.</p></div>
+        <div><span>2</span><p>Ajuste posição e zoom.</p></div>
+        <div><span>3</span><p>Personalize os textos.</p></div>
+        <div><span>4</span><p>Salve em PNG.</p></div>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
