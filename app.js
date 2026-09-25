@@ -4,307 +4,251 @@ const fileInput = document.getElementById('fileInput');
 const uploadZone = document.getElementById('uploadZone');
 const uploadTitle = document.getElementById('uploadTitle');
 const uploadHint = document.getElementById('uploadHint');
-const profileTab = document.getElementById('profileTab');
-const storyTab = document.getElementById('storyTab');
 const zoomRange = document.getElementById('zoomRange');
-const titleText = document.getElementById('titleText');
-const numberText = document.getElementById('numberText');
-const messageText = document.getElementById('messageText');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetBtn = document.getElementById('resetBtn');
 const shareBtn = document.getElementById('shareBtn');
-const sizeLabel = document.getElementById('sizeLabel');
 const status = document.getElementById('status');
-const steps = [...document.querySelectorAll('.step')];
 
-const palette = { green:'#0b6b3a', green2:'#07542e', orange:'#f28c28', white:'#fff', ink:'#183428' };
-let mode = 'profile';
+const palette = {
+  green: '#0b6b3a',
+  greenDark: '#064c2a',
+  orange: '#f28c28',
+  white: '#ffffff',
+  cream: '#fff9f0'
+};
+
 let image = null;
 let offsetX = 0;
 let offsetY = 0;
 let dragging = false;
-let last = {x:0,y:0};
+let last = { x: 0, y: 0 };
 
-function setStep(index){
-  steps.forEach((step,i)=>step.classList.toggle('active', i <= index));
+function roundedRectPath(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
-function setMode(next){
-  mode = next;
-  const profile = mode === 'profile';
-  profileTab.classList.toggle('active', profile);
-  storyTab.classList.toggle('active', !profile);
-  profileTab.setAttribute('aria-selected', String(profile));
-  storyTab.setAttribute('aria-selected', String(!profile));
-  canvas.width = 1080;
-  canvas.height = profile ? 1080 : 1920;
-  sizeLabel.textContent = profile ? '1080 × 1080' : '1080 × 1920';
-  resetTransform();
-  setStep(image ? 2 : 0);
-  draw();
-}
-
-function resetTransform(){
+function resetTransform() {
   zoomRange.value = '1';
   offsetX = 0;
   offsetY = 0;
 }
 
-function fitCover(img, x, y, w, h){
-  const z = Number(zoomRange.value);
+function fitCover(img, x, y, w, h) {
+  const zoom = Number(zoomRange.value);
   const base = Math.max(w / img.width, h / img.height);
-  const scale = base * z;
+  const scale = base * zoom;
   const dw = img.width * scale;
   const dh = img.height * scale;
-  const dx = x + (w - dw)/2 + offsetX;
-  const dy = y + (h - dh)/2 + offsetY;
+  const dx = x + (w - dw) / 2 + offsetX;
+  const dy = y + (h - dh) / 2 + offsetY;
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-function roundedRectPath(x,y,w,h,r){
-  const rr=Math.min(r,w/2,h/2);
-  ctx.beginPath();
-  ctx.moveTo(x+rr,y);
-  ctx.arcTo(x+w,y,x+w,y+h,rr);
-  ctx.arcTo(x+w,y+h,x,y+h,rr);
-  ctx.arcTo(x,y+h,x,y,rr);
-  ctx.arcTo(x,y,x+w,y,rr);
-  ctx.closePath();
+function drawPlaceholder() {
+  const g = ctx.createLinearGradient(0, 0, 1080, 1500);
+  g.addColorStop(0, '#dbe9e1');
+  g.addColorStop(1, '#f2e6d7');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 1080, 1920);
+
+  ctx.fillStyle = '#6a8174';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 42px system-ui';
+  ctx.fillText('Selecione sua foto', 540, 820);
 }
 
-function drawPlaceholder(x,y,w,h){
-  const g=ctx.createLinearGradient(x,y,x+w,y+h);
-  g.addColorStop(0,'#d7e7df');
-  g.addColorStop(1,'#f3eee7');
-  ctx.fillStyle=g;
-  ctx.fillRect(x,y,w,h);
-  ctx.fillStyle='#6d8378';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.font='700 42px system-ui';
-  ctx.fillText('Sua foto',x+w/2,y+h/2);
-}
+function drawStory() {
+  const W = canvas.width;
+  const H = canvas.height;
 
-function drawProfile(){
-  const W=canvas.width,H=canvas.height;
-  ctx.fillStyle=palette.green;
-  ctx.fillRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
 
-  const top=60, side=60, innerW=W-side*2, innerH=760;
-  roundedRectPath(side,top,innerW,innerH,56);
-  ctx.fillStyle=palette.white;
+  if (image) fitCover(image, 0, 0, W, H);
+  else drawPlaceholder();
+
+  const topFade = ctx.createLinearGradient(0, 0, 0, 430);
+  topFade.addColorStop(0, 'rgba(3, 54, 28, .92)');
+  topFade.addColorStop(1, 'rgba(3, 54, 28, 0)');
+  ctx.fillStyle = topFade;
+  ctx.fillRect(0, 0, W, 430);
+
+  const bottomFade = ctx.createLinearGradient(0, 1120, 0, H);
+  bottomFade.addColorStop(0, 'rgba(3, 54, 28, 0)');
+  bottomFade.addColorStop(.35, 'rgba(3, 54, 28, .72)');
+  bottomFade.addColorStop(1, 'rgba(3, 54, 28, .98)');
+  ctx.fillStyle = bottomFade;
+  ctx.fillRect(0, 1050, W, H - 1050);
+
+  ctx.fillStyle = palette.orange;
+  roundedRectPath(62, 70, 310, 74, 37);
   ctx.fill();
+
+  ctx.fillStyle = palette.greenDark;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 34px system-ui';
+  ctx.fillText('DEPUTADA ESTADUAL', 217, 108);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = palette.white;
+  ctx.font = '900 82px system-ui';
+  ctx.fillText('BETH', 64, 1570);
+
+  ctx.font = '900 108px system-ui';
+  ctx.fillText('NORONHA', 64, 1672);
+
+  ctx.fillStyle = palette.orange;
+  ctx.font = '950 150px system-ui';
+  ctx.fillText('43.333', 60, 1814);
+
+  ctx.fillStyle = palette.white;
+  ctx.font = '800 34px system-ui';
+  ctx.fillText('NINGUÉM É FORTE SOZINHO', 66, 1878);
+
+  ctx.fillStyle = palette.orange;
+  ctx.fillRect(0, 1904, W, 16);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(W/2,410,392,338,0,0,Math.PI*2);
-  ctx.clip();
-  if(image) fitCover(image,W/2-392,72,784,676);
-  else drawPlaceholder(W/2-392,72,784,676);
+  ctx.globalAlpha = .95;
+  ctx.fillStyle = palette.white;
+  roundedRectPath(790, 72, 228, 72, 36);
+  ctx.fill();
   ctx.restore();
 
-  ctx.lineWidth=18;
-  ctx.strokeStyle=palette.orange;
-  ctx.beginPath();
-  ctx.ellipse(W/2,410,405,351,0,0,Math.PI*2);
-  ctx.stroke();
-
-  ctx.lineWidth=10;
-  ctx.strokeStyle=palette.green;
-  ctx.beginPath();
-  ctx.ellipse(W/2,410,423,369,0,0,Math.PI*2);
-  ctx.stroke();
-
-  ctx.fillStyle=palette.orange;
-  roundedRectPath(110,775,860,222,40);
-  ctx.fill();
-
-  ctx.textAlign='center';
-  ctx.fillStyle='#153125';
-  ctx.font='900 44px system-ui';
-  ctx.fillText(titleText.value.trim() || 'SEU NOME',W/2,842);
-
-  ctx.fillStyle=palette.white;
-  ctx.font='950 98px system-ui';
-  ctx.fillText(numberText.value.trim() || '00.000',W/2,934);
-
-  ctx.fillStyle=palette.white;
-  ctx.font='800 30px system-ui';
-  ctx.fillText((messageText.value.trim() || 'SUA MENSAGEM AQUI').toUpperCase(),W/2,1035);
+  ctx.fillStyle = palette.green;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 30px system-ui';
+  ctx.fillText('43.333', 904, 108);
 }
 
-function drawStory(){
-  const W=canvas.width,H=canvas.height;
-  ctx.fillStyle='#dce9e2';
-  ctx.fillRect(0,0,W,H);
-
-  ctx.save();
-  roundedRectPath(54,54,972,1370,54);
-  ctx.clip();
-  if(image) fitCover(image,54,54,972,1370);
-  else drawPlaceholder(54,54,972,1370);
-
-  const grad=ctx.createLinearGradient(0,920,0,1424);
-  grad.addColorStop(0,'rgba(0,0,0,0)');
-  grad.addColorStop(1,'rgba(0,0,0,.62)');
-  ctx.fillStyle=grad;
-  ctx.fillRect(54,820,972,604);
-  ctx.restore();
-
-  ctx.fillStyle=palette.green;
-  roundedRectPath(54,1456,972,398,54);
-  ctx.fill();
-
-  ctx.fillStyle=palette.orange;
-  roundedRectPath(90,1498,210,54,27);
-  ctx.fill();
-
-  ctx.fillStyle=palette.white;
-  ctx.textAlign='left';
-  ctx.font='900 54px system-ui';
-  ctx.fillText(titleText.value.trim() || 'SEU NOME',92,1637);
-
-  ctx.fillStyle=palette.orange;
-  ctx.font='950 126px system-ui';
-  ctx.fillText(numberText.value.trim() || '00.000',92,1772);
-
-  ctx.fillStyle=palette.white;
-  ctx.font='800 35px system-ui';
-  ctx.fillText((messageText.value.trim() || 'SUA MENSAGEM AQUI').toUpperCase(),92,1833);
-}
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(mode==='profile') drawProfile();
-  else drawStory();
-}
-
-function setUploadLabel(file){
-  if(!file) return;
+function setUploadLabel(file) {
   uploadTitle.textContent = file.name;
-  const mb = (file.size / 1024 / 1024).toFixed(1);
-  uploadHint.textContent = `${mb} MB • pronta para ajustar`;
+  uploadHint.textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB • pronta para ajustar';
 }
 
-function loadFile(file){
-  if(!file) return;
-  if(!file.type.startsWith('image/')){
-    status.textContent='Escolha um arquivo de imagem.';
+function loadFile(file) {
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    status.textContent = 'Escolha um arquivo de imagem.';
     return;
   }
 
   setUploadLabel(file);
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const img=new Image();
-    img.onload=()=>{
-      image=img;
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      image = img;
       resetTransform();
-      setStep(2);
-      draw();
-      status.textContent='Foto carregada. Arraste a imagem para ajustar o enquadramento.';
+      drawStory();
+      status.textContent = 'Foto carregada. Ajuste o enquadramento e baixe o Story.';
     };
-    img.src=reader.result;
+    img.src = reader.result;
   };
+
   reader.readAsDataURL(file);
 }
 
-function pointFromEvent(e){
-  const r=canvas.getBoundingClientRect();
+function pointFromEvent(e) {
+  const r = canvas.getBoundingClientRect();
   return {
-    x:(e.clientX-r.left)*(canvas.width/r.width),
-    y:(e.clientY-r.top)*(canvas.height/r.height)
+    x: (e.clientX - r.left) * (canvas.width / r.width),
+    y: (e.clientY - r.top) * (canvas.height / r.height)
   };
 }
 
-canvas.addEventListener('pointerdown',e=>{
-  if(!image) return;
-  dragging=true;
+canvas.addEventListener('pointerdown', e => {
+  if (!image) return;
+  dragging = true;
   canvas.setPointerCapture(e.pointerId);
-  last=pointFromEvent(e);
+  last = pointFromEvent(e);
 });
 
-canvas.addEventListener('pointermove',e=>{
-  if(!dragging||!image) return;
-  const p=pointFromEvent(e);
-  offsetX += p.x-last.x;
-  offsetY += p.y-last.y;
-  last=p;
-  draw();
+canvas.addEventListener('pointermove', e => {
+  if (!dragging || !image) return;
+  const p = pointFromEvent(e);
+  offsetX += p.x - last.x;
+  offsetY += p.y - last.y;
+  last = p;
+  drawStory();
 });
 
-canvas.addEventListener('pointerup',()=>dragging=false);
-canvas.addEventListener('pointercancel',()=>dragging=false);
+canvas.addEventListener('pointerup', () => dragging = false);
+canvas.addEventListener('pointercancel', () => dragging = false);
 
-fileInput.addEventListener('change',e=>loadFile(e.target.files[0]));
+fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
 
-['dragenter','dragover'].forEach(type=>{
-  uploadZone.addEventListener(type,e=>{
+['dragenter', 'dragover'].forEach(type => {
+  uploadZone.addEventListener(type, e => {
     e.preventDefault();
     uploadZone.classList.add('dragging');
   });
 });
 
-['dragleave','drop'].forEach(type=>{
-  uploadZone.addEventListener(type,e=>{
+['dragleave', 'drop'].forEach(type => {
+  uploadZone.addEventListener(type, e => {
     e.preventDefault();
     uploadZone.classList.remove('dragging');
   });
 });
 
-uploadZone.addEventListener('drop',e=>{
-  const file=e.dataTransfer?.files?.[0];
-  if(file) loadFile(file);
+uploadZone.addEventListener('drop', e => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) loadFile(file);
 });
 
-profileTab.addEventListener('click',()=>setMode('profile'));
-storyTab.addEventListener('click',()=>setMode('story'));
+zoomRange.addEventListener('input', drawStory);
 
-zoomRange.addEventListener('input',()=>{
-  if(image) setStep(2);
-  draw();
-});
-
-[titleText,numberText,messageText].forEach(el=>{
-  el.addEventListener('input',()=>{
-    if(image) setStep(2);
-    draw();
-  });
-});
-
-resetBtn.addEventListener('click',()=>{
+resetBtn.addEventListener('click', () => {
   resetTransform();
-  draw();
-  status.textContent='Enquadramento redefinido.';
+  drawStory();
+  status.textContent = 'Enquadramento redefinido.';
 });
 
-downloadBtn.addEventListener('click',()=>{
-  draw();
-  setStep(3);
-  canvas.toBlob(blob=>{
-    if(!blob) return;
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=`moldura-${mode}.png`;
+downloadBtn.addEventListener('click', () => {
+  drawStory();
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'story-beth-noronha-43333.png';
     a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    status.textContent='PNG gerado em alta resolução.';
-  },'image/png');
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    status.textContent = 'Story gerado em 1080 × 1920.';
+  }, 'image/png');
 });
 
-shareBtn.addEventListener('click',async()=>{
-  const data={title:document.title,text:'Gerador de molduras',url:location.href};
-  try{
-    if(navigator.share) await navigator.share(data);
-    else{
+shareBtn.addEventListener('click', async () => {
+  const data = {
+    title: document.title,
+    text: 'Gerador de Story Beth Noronha 43.333',
+    url: location.href
+  };
+
+  try {
+    if (navigator.share) await navigator.share(data);
+    else {
       await navigator.clipboard.writeText(location.href);
-      status.textContent='Link copiado.';
+      status.textContent = 'Link copiado.';
     }
-  }catch(_){}
+  } catch (_) {}
 });
 
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 
-setMode('profile');
+drawStory();
