@@ -1,16 +1,16 @@
-# Gerador de Molduras
+# Story Beth Noronha 43.333
 
-Webapp estático, sem dependências, para montar uma foto de perfil ou Story com moldura e textos personalizáveis.
+Webapp estático e responsivo para gerar **Story 9:16 (1080 × 1920)** com a identidade visual da campanha.
 
 ## Recursos
-- upload de imagem local;
+- upload de foto no próprio aparelho;
 - arrastar para reposicionar;
-- zoom;
-- formatos 1080×1080 e 1080×1920;
-- exportação PNG;
-- Web Share API / copiar link;
-- PWA simples;
-- processamento 100% no navegador.
+- controle de zoom;
+- moldura fixa para Story;
+- identificação Beth Noronha • Deputada Estadual • 43.333;
+- exportação em PNG 1080 × 1920;
+- compartilhamento do link;
+- processamento local no navegador, sem envio da foto para servidor.
 
 ## Publicar na Vercel
 1. Importe este repositório na Vercel.
@@ -19,5 +19,4 @@ Webapp estático, sem dependências, para montar uma foto de perfil ou Story com
 4. Output Directory: deixe vazio.
 5. Deploy.
 
-## Personalização
-As cores ficam em `styles.css` e no objeto `palette` de `app.js`. Os três textos da moldura são editáveis na própria interface.
+Se o repositório já estiver conectado à Vercel, alterações na branch `main` podem gerar um novo deploy automaticamente, conforme a configuração do projeto.
