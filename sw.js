@@ -1,23 +1,11 @@
-const CACHE = 'beth-story-v6';
+const CACHE = 'beth-story-v8';
 const ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
   '/manifest.webmanifest',
-  '/icon.svg',
-  '/frame/part00.txt',
-  '/frame/part01.txt',
-  '/frame/part02.txt',
-  '/frame/part03.txt',
-  '/frame/part04.txt',
-  '/frame/part05.txt',
-  '/frame/part06.txt',
-  '/frame/part07.txt',
-  '/frame/part08.txt',
-  '/frame/part09.txt',
-  '/frame/part10.txt',
-  '/frame/part11.txt'
+  '/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
