@@ -10,18 +10,11 @@ const resetBtn = document.getElementById('resetBtn');
 const shareBtn = document.getElementById('shareBtn');
 const status = document.getElementById('status');
 
-const FRAME_VERSION = '7';
-const OVERLAY_PARTS = Array.from(
-  { length: 12 },
-  (_, i) => `/frame/part${String(i).padStart(2, '0')}.txt?v=${FRAME_VERSION}`
-);
-
-// Área útil da foto dentro da moldura oficial 9:16.
-// Topo e rodapé permanecem protegidos pela arte da campanha.
-const PHOTO_WINDOW = { x: 0, y: 355, w: 1080, h: 1105 };
+const FRAME_VERSION = '8';
+const W = 1080;
+const H = 1920;
 
 let image = null;
-let overlay = null;
 let offsetX = 0;
 let offsetY = 0;
 let dragging = false;
@@ -40,9 +33,8 @@ function resetTransform() {
 function getImageGeometry() {
   if (!image) return null;
 
-  const { x, y, w, h } = PHOTO_WINDOW;
   const zoom = Number(zoomRange.value);
-  const base = Math.max(w / image.width, h / image.height);
+  const base = Math.max(W / image.width, H / image.height);
   const scale = base * zoom;
   const dw = image.width * scale;
   const dh = image.height * scale;
@@ -50,101 +42,159 @@ function getImageGeometry() {
   return {
     dw,
     dh,
-    dx: x + (w - dw) / 2 + offsetX,
-    dy: y + (h - dh) / 2 + offsetY
+    dx: (W - dw) / 2 + offsetX,
+    dy: (H - dh) / 2 + offsetY
   };
 }
 
 function clampOffsets() {
-  const geometry = getImageGeometry();
-  if (!geometry) return;
+  const g = getImageGeometry();
+  if (!g) return;
 
-  const { w, h } = PHOTO_WINDOW;
-  const maxX = Math.max(0, (geometry.dw - w) / 2);
-  const maxY = Math.max(0, (geometry.dh - h) / 2);
+  const maxX = Math.max(0, (g.dw - W) / 2);
+  const maxY = Math.max(0, (g.dh - H) / 2);
 
   offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
   offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
 }
 
-function drawPhoto() {
-  if (!image) return;
-
-  clampOffsets();
-  const geometry = getImageGeometry();
-  const { x, y, w, h } = PHOTO_WINDOW;
-
-  ctx.save();
+function roundedRect(x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  ctx.drawImage(image, geometry.dx, geometry.dy, geometry.dw, geometry.dh);
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawLeaf(cx, cy, rx, ry, angle) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
+function drawPhoto() {
+  if (!image) return;
+  clampOffsets();
+  const g = getImageGeometry();
+  ctx.drawImage(image, g.dx, g.dy, g.dw, g.dh);
+}
+
 function drawPlaceholder() {
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const { x, y, w, h } = PHOTO_WINDOW;
-  const g = ctx.createLinearGradient(x, y, x, y + h);
-  g.addColorStop(0, '#f2f5f3');
-  g.addColorStop(1, '#e4ebe7');
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#eef3ef');
+  g.addColorStop(1, '#dce6df');
   ctx.fillStyle = g;
-  ctx.fillRect(x, y, w, h);
+  ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#667b70';
+  ctx.fillStyle = '#61766b';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 40px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Selecione sua foto', 540, y + h / 2);
+  ctx.font = '700 42px Inter, system-ui, sans-serif';
+  ctx.fillText('Selecione sua foto', W / 2, H / 2);
+}
+
+function drawPrototypeFrame() {
+  // Proteção discreta no topo, mantendo a foto como protagonista.
+  const top = ctx.createLinearGradient(0, 0, 0, 360);
+  top.addColorStop(0, 'rgba(4,63,35,.72)');
+  top.addColorStop(.55, 'rgba(4,63,35,.22)');
+  top.addColorStop(1, 'rgba(4,63,35,0)');
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, W, 360);
+
+  // Selo do cargo — mantém a linguagem do primeiro protótipo.
+  ctx.save();
+  roundedRect(58, 66, 360, 78, 39);
+  ctx.fillStyle = '#f28c28';
+  ctx.fill();
+  ctx.fillStyle = '#07512d';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 34px Anton, Impact, sans-serif';
+  ctx.fillText('DEPUTADA ESTADUAL', 238, 108);
+  ctx.restore();
+
+  // Número compacto no topo direito.
+  ctx.save();
+  roundedRect(816, 66, 206, 78, 39);
+  ctx.fillStyle = 'rgba(255,255,255,.95)';
+  ctx.fill();
+  ctx.fillStyle = '#0b6b3a';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 38px Anton, Impact, sans-serif';
+  ctx.fillText('43.333', 919, 108);
+  ctx.restore();
+
+  // Gradiente inferior do protótipo: foto inteira, informação apenas na base.
+  const bottom = ctx.createLinearGradient(0, 930, 0, H);
+  bottom.addColorStop(0, 'rgba(2,55,30,0)');
+  bottom.addColorStop(.24, 'rgba(2,55,30,.22)');
+  bottom.addColorStop(.52, 'rgba(2,55,30,.78)');
+  bottom.addColorStop(1, 'rgba(2,55,30,.98)');
+  ctx.fillStyle = bottom;
+  ctx.fillRect(0, 900, W, H - 900);
+
+  // Tipografia da Beth: assinatura + NORONHA condensado.
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = 'rgba(0,0,0,.20)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+
+  ctx.fillStyle = '#fffdf7';
+  ctx.font = '400 150px "Kaushan Script", cursive';
+  ctx.fillText('Beth', 70, 1370);
+
+  // Folhas da assinatura.
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#a9d84e';
+  drawLeaf(405, 1268, 18, 42, -0.58);
+  drawLeaf(438, 1248, 17, 39, 0.10);
+  drawLeaf(461, 1285, 18, 41, 0.72);
+
+  ctx.fillStyle = '#fffdf7';
+  ctx.font = '400 132px Anton, Impact, "Arial Narrow", sans-serif';
+  ctx.fillText('NORONHA', 66, 1510);
+
+  // Número — mesma hierarquia do protótipo, agora alinhado à marca.
+  ctx.shadowColor = 'rgba(0,0,0,.28)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 5;
+  ctx.fillStyle = '#ff8b1f';
+  ctx.font = '400 224px Anton, Impact, sans-serif';
+  ctx.fillText('43.333', 64, 1740);
+
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 40px Inter, system-ui, sans-serif';
+  ctx.fillText('NINGUÉM É FORTE SOZINHO', 72, 1810);
+
+  // Traço laranja de fechamento.
+  ctx.fillStyle = '#f28c28';
+  roundedRect(70, 1850, 510, 12, 6);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawStory() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, W, H);
 
   if (image) {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawPhoto();
   } else {
     drawPlaceholder();
   }
 
-  if (overlay) {
-    ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-  }
-}
-
-async function loadOverlay() {
-  setStatus('Carregando a moldura oficial...');
-
-  try {
-    const parts = await Promise.all(
-      OVERLAY_PARTS.map(async (url) => {
-        const response = await fetch(url, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Falha ao carregar ${url}`);
-        return (await response.text()).trim();
-      })
-    );
-
-    const base64 = parts.join('');
-    if (!base64) throw new Error('Moldura vazia');
-
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = () => reject(new Error('Moldura inválida'));
-      img.src = 'data:image/webp;base64,' + base64;
-    });
-
-    overlay = img;
-    drawStory();
-    setStatus('Moldura oficial pronta. Escolha sua foto.');
-  } catch (error) {
-    console.error(error);
-    setStatus('Não foi possível carregar a moldura. Recarregue a página.');
-  }
+  drawPrototypeFrame();
 }
 
 function setUploadLabel(file) {
@@ -185,8 +235,8 @@ function loadFile(file) {
 function pointFromEvent(e) {
   const r = canvas.getBoundingClientRect();
   return {
-    x: (e.clientX - r.left) * (canvas.width / r.width),
-    y: (e.clientY - r.top) * (canvas.height / r.height)
+    x: (e.clientX - r.left) * (W / r.width),
+    y: (e.clientY - r.top) * (H / r.height)
   };
 }
 
@@ -220,9 +270,7 @@ canvas.addEventListener('pointerleave', (e) => {
   if (e.pointerType === 'mouse') stopDragging(e);
 });
 
-fileInput.addEventListener('change', (e) => {
-  loadFile(e.target.files?.[0]);
-});
+fileInput.addEventListener('change', (e) => loadFile(e.target.files?.[0]));
 
 ['dragenter', 'dragover'].forEach((type) => {
   uploadZone.addEventListener(type, (e) => {
@@ -264,23 +312,18 @@ downloadBtn.addEventListener('click', async () => {
     return;
   }
 
-  if (!overlay) {
-    setStatus('Aguarde a moldura oficial carregar.');
-    return;
-  }
-
   drawStory();
   const blob = await canvasToBlob();
+
   if (!blob) {
     setStatus('Não foi possível gerar a imagem. Tente novamente.');
     return;
   }
 
-  const filename = 'story-beth-noronha-43333.png';
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = 'story-beth-noronha-43333.png';
   a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
@@ -317,4 +360,6 @@ if ('serviceWorker' in navigator) {
 }
 
 drawStory();
-loadOverlay();
+if (document.fonts?.ready) {
+  document.fonts.ready.then(drawStory).catch(() => {});
+}
